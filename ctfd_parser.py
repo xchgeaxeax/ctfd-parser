@@ -76,6 +76,16 @@ class CTFdParser(object):
         else:
             return None
 
+
+    def get_challenge_flags(self, challenge_id):
+        r = self.session.get(f"{self.target}/api/v1/challenges/{challenge_id}/flags")
+        if r.status_code == 200:
+            return json.loads(r.content)
+        return None
+
+
+
+
     def _parse(self:object, threads:int=8) -> None:
         # Categories
         self.categories = [chall["category"] for chall in self.challenges]
@@ -150,10 +160,25 @@ class CTFdParser(object):
                         for chunk in r.iter_content(chunk_size=16 * 1024):
                             fdl.write(chunk)
 
+
                 f.write(f" - [{filename}](./{filename})\n")
+
+
+        f.write("\n\n")
+        # f.close()
+
+        flags = self.get_challenge_flags(challenge["id"])
+        if flags and flags['success']:
+            f.write("\n## Flags:\n")
+            for flag in flags['data']:
+                f.write(f"- Type: {flag['type']}\n")
+                f.write(f"  Content: {flag['content']}\n")
+        else:
+            f.write("\nNo flags available or unable to retrieve flags.\n")
 
         f.write("\n\n")
         f.close()
+
 
     def get_challenge_by_id(self:object, chall_id:int) -> dict:
         """Documentation for get_challenge_by_id"""
